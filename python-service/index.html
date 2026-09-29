@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculator</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    body {
+      background-color: #fef4f8;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 20px;
+      gap: 20px;
+    }
+
+    .calculator {
+      width: 340px;
+      background-color: #fff;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+
+    .display {
+      background-color: #222;
+      color: white;
+      text-align: right;
+      padding: 30px 20px;
+      font-size: 48px;
+      min-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      word-break: break-all;
+    }
+
+    .status {
+      background-color: #fff0f5;
+      padding: 10px 15px;
+      font-size: 13px;
+      color: #d63384;
+      border-top: 1px solid #f8d7e3;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status.error { color: #dc3545; }
+    .status.success { color: #28a745; }
+
+    .status-icon {
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background-color: #f8e6ee;
+    }
+
+    .btn {
+      border: none;
+      font-size: 22px;
+      padding: 20px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn:hover {
+      opacity: 0.8;
+    }
+
+    .btn-gray {
+      background-color: #f3e1eb;
+      color: #444;
+    }
+
+    .btn-pink {
+      background-color: #f8c8dc;
+      color: #fff;
+      font-weight: bold;
+    }
+
+    .btn-orange {
+      background-color: #ffb347;
+      color: white;
+      font-weight: bold;
+    }
+
+    .btn-zero {
+      grid-column: span 2;
+      border-bottom-left-radius: 24px;
+    }
+
+    /* History Panel */
+    .history-panel {
+      width: 300px;
+      background-color: #fff;
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+
+    .history-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #d63384;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #f8d7e3;
+    }
+
+    .history-list {
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    .history-item {
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      background-color: #fef4f8;
+      border-radius: 10px;
+      font-size: 14px;
+      color: #555;
+    }
+
+    .history-result {
+      color: #d63384;
+      font-weight: bold;
+    }
+
+    .clear-history {
+      margin-top: 15px;
+      width: 100%;
+      padding: 10px;
+      background-color: #f3e1eb;
+      border: none;
+      border-radius: 10px;
+      color: #d63384;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .clear-history:hover {
+      background-color: #f8c8dc;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="calculator">
+    <div class="display" id="display">0</div>
+    
+    <div class="status" id="status">
+      <span class="status-icon">×</span>
+      <span id="status-text">Check if Python is running on port 5001</span>
+    </div>
+
+    <div class="buttons">
+      <button class="btn btn-gray" onclick="clearAll()">C</button>
+      <button class="btn btn-gray" onclick="appendValue('±')">±</button>
+      <button class="btn btn-gray" onclick="appendValue('%')">%</button>
+      <button class="btn btn-orange" onclick="setOperation('/')">÷</button>
+
+      <button class="btn btn-gray" onclick="appendValue('7')">7</button>
+      <button class="btn btn-gray" onclick="appendValue('8')">8</button>
+      <button class="btn btn-gray" onclick="appendValue('9')">9</button>
+      <button class="btn btn-orange" onclick="setOperation('*')">×</button>
+
+      <button class="btn btn-gray" onclick="appendValue('4')">4</button>
+      <button class="btn btn-gray" onclick="appendValue('5')">5</button>
+      <button class="btn btn-gray" onclick="appendValue('6')">6</button>
+      <button class="btn btn-orange" onclick="setOperation('-')">−</button>
+
+      <button class="btn btn-gray" onclick="appendValue('1')">1</button>
+      <button class="btn btn-gray" onclick="appendValue('2')">2</button>
+      <button class="btn btn-gray" onclick="appendValue('3')">3</button>
+      <button class="btn btn-orange" onclick="setOperation('+')">+</button>
+
+      <button class="btn btn-gray btn-zero" onclick="appendValue('0')">0</button>
+      <button class="btn btn-gray" onclick="appendValue('.')">.</button>
+      <button class="btn btn-orange" onclick="calculateResult()">=</button>
+    </div>
+  </div>
+
+  <!-- History Panel -->
+  <div class="history-panel">
+    <div class="history-title">📝 Calculation History</div>
+    <div class="history-list" id="historyList">
+      <div style="color:#999; font-size:13px;">No calculations yet...</div>
+    </div>
+    <button class="clear-history" onclick="clearHistory()">Clear History</button>
+  </div>
+
+  <script>
+    let currentValue = '0';
+    let firstOperand = null;
+    let operation = null;
+    let shouldResetDisplay = false;
+    let history = [];
+
+    const display = document.getElementById('display');
+    const statusDiv = document.getElementById('status');
+    const statusText = document.getElementById('status-text');
+    const historyList = document.getElementById('historyList');
+
+    // Check Python status on load
+    checkStatus();
+
+    function appendValue(val) {
+      if (shouldResetDisplay) {
+        currentValue = '';
+        shouldResetDisplay = false;
+      }
+      
+      if (val === '.' && currentValue.includes('.')) return;
+      if (currentValue === '0' && val !== '.') currentValue = '';
+      
+      currentValue += val;
+      updateDisplay();
+    }
+
+    function setOperation(op) {
+      if (firstOperand !== null && operation !== null && !shouldResetDisplay) {
+        calculateResult(true);
+      }
+      
+      firstOperand = parseFloat(currentValue);
+      operation = op;
+      shouldResetDisplay = true;
+    }
+
+    function clearAll() {
+      currentValue = '0';
+      firstOperand = null;
+      operation = null;
+      shouldResetDisplay = false;
+      updateDisplay();
+    }
+
+    async function calculateResult(isChaining = false) {
+      if (firstOperand === null || operation === null) return;
+      
+      const secondOperand = parseFloat(currentValue);
+      
+      try {
+        updateStatus('checking', 'Sending to server...');
+        
+        const response = await fetch('http://localhost:3000/api/calculate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            num1: firstOperand,
+            num2: secondOperand,
+            operation: getOpName(operation)
+          })
+        });
+
+        if (!response.ok) throw new Error('Server error');
+        
+        const data = await response.json();
+        const result = data.python_result.result;
+        
+        // Format for display
+        currentValue = String(result);
+        updateDisplay();
+        
+        // Add to history
+        addToHistory(firstOperand, operation, secondOperand, result);
+        
+        updateStatus('success', 'Connected to Python ✓');
+        
+        if (!isChaining) {
+          firstOperand = result;
+          shouldResetDisplay = true;
+        } else {
+          firstOperand = result;
+          shouldResetDisplay = true;
+        }
+        
+      } catch (err) {
+        updateStatus('error', 'Check if Python is running on port 5001');
+        console.error(err);
+      }
+    }
+
+    function getOpName(op) {
+      switch(op) {
+        case '+': return 'add';
+        case '-': return 'subtract';
+        case '*': return 'multiply';
+        case '/': return 'divide';
+        default: return 'add';
+      }
+    }
+
+    function getOpSymbol(op) {
+      switch(op) {
+        case '+': return '+';
+        case '-': return '−';
+        case '*': return '×';
+        case '/': return '÷';
+        default: return op;
+      }
+    }
+
+    function addToHistory(num1, op, num2, result) {
+      const item = {
+        num1,
+        op,
+        num2,
+        result,
+        time: new Date().toLocaleTimeString()
+      };
+      
+      history.unshift(item); // Newest on top
+      renderHistory();
+    }
+
+    function renderHistory() {
+      if (history.length === 0) {
+        historyList.innerHTML = '<div style="color:#999; font-size:13px;">No calculations yet...</div>';
+        return;
+      }
+      
+      historyList.innerHTML = history.map(item => `
+        <div class="history-item">
+          <div>${item.num1} ${getOpSymbol(item.op)} ${item.num2} = 
+            <span class="history-result">${item.result}</span>
+          </div>
+          <div style="font-size:11px; color:#bbb; margin-top:4px;">${item.time}</div>
+        </div>
+      `).join('');
+    }
+
+    function clearHistory() {
+      history = [];
+      renderHistory();
+    }
+
+    function updateDisplay() {
+      display.textContent = currentValue;
+    }
+
+    function updateStatus(type, message) {
+      statusText.textContent = message;
+      statusDiv.className = 'status ' + (type === 'success' ? 'success' : type === 'error' ? 'error' : '');
+      statusDiv.querySelector('.status-icon').textContent = 
+        type === 'success' ? '✓' : type === 'error' ? '×' : '⏳';
+    }
+
+    async function checkStatus() {
+      try {
+        const res = await fetch('http://localhost:3000/api/status');
+        const data = await res.json();
+        if (data.python && data.python.status) {
+          updateStatus('success', 'Python is running ✓');
+        } else {
+          updateStatus('error', 'Python not reachable');
+        }
+      } catch {
+        updateStatus('error', 'Check if Python is running on port 5001');
+      }
+    }
+  </script>
+</body>
+</html>
